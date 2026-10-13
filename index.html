@@ -16,59 +16,95 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.4 var(--body);overflow:hidden}
 #stage{position:fixed;inset:0}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none}
+/* no page zoom from pinches or double-taps on the overlays (the canvas handles its own gestures); the chip rail still scrolls */
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#hud{touch-action:pan-x;overscroll-behavior-x:contain}
+#info,#jukebox,#jb-pill,#load,#title{touch-action:none}
+#load.retry{cursor:pointer;pointer-events:auto!important;opacity:1!important;visibility:visible!important}
 #load{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);transition:opacity .8s;z-index:5}
-body.ready #load{opacity:0;pointer-events:none}
+body.ready #load{opacity:0;pointer-events:none;visibility:hidden;transition:opacity .8s,visibility 0s .8s}   /* gone, not just faded: nothing paints over the player */
 #load h1{font:700 clamp(34px,7vw,64px)/1 var(--display);letter-spacing:.12em;margin:0 0 10px}
 #load p{color:var(--dim);margin:0 0 18px;font-style:italic}
 #bar{width:min(320px,70vw);height:2px;background:var(--line)}#prog{height:100%;width:3%;background:var(--accent);transition:width .4s}
 #err{color:#f88;margin-top:10px;font-family:monospace;font-size:12px}
-#hud{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;
+#hud{position:fixed;left:0;right:0;bottom:0;padding:10px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));display:flex;gap:8px;align-items:center;
   background:linear-gradient(transparent,rgba(0,0,0,.72));z-index:3;overflow-x:auto;scrollbar-width:none;opacity:0;transition:opacity .8s .3s}
 body.ready #hud{opacity:1}
 #hud::-webkit-scrollbar{display:none}
 #hud button{flex:none;font:500 15px/1 var(--display);letter-spacing:.05em;color:var(--ink);background:rgba(20,18,20,.55);border:1px solid var(--line);
-  border-radius:999px;padding:9px 14px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#hud button:hover{border-color:rgba(255,255,255,.35)}
+  border-radius:999px;padding:9px 14px;min-height:40px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#hud button:hover,#hud button:active{border-color:rgba(255,255,255,.35)}
 #hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 #hud .sep{flex:1 0 8px}
 #hud #lights{border-color:rgba(255,190,120,.45);color:var(--candle)}
 #hud button:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
-#info{position:fixed;left:16px;bottom:calc(64px + env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 32px));z-index:4;
-  background:rgba(14,12,14,.82);border:1px solid var(--line);border-radius:14px;padding:14px 40px 14px 16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .25s,transform .25s}
-#info.on{opacity:1;transform:none;pointer-events:auto}
+#info{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:calc(var(--hud-h,62px) + 8px);max-width:min(380px,calc(100vw - 32px));z-index:4;
+  background:rgba(14,12,14,.82);border:1px solid var(--line);border-radius:14px;padding:14px 44px 14px 16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;transform:translateY(8px);pointer-events:none;visibility:hidden;transition:opacity .25s,transform .25s,visibility 0s .25s}
+#info.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .25s,transform .25s}
 #info b{display:block;font:700 19px/1.15 var(--display);letter-spacing:.03em;margin-bottom:6px;color:var(--candle)}
 #info p{margin:0;color:var(--ink);opacity:.86;font-size:14.5px;line-height:1.5}
-#info button{position:absolute;right:8px;top:8px;background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:4px}
-#caption{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.96);z-index:4;font-size:clamp(22px,4.4vw,42px);font-style:italic;color:#fff;
-  text-shadow:0 2px 24px #000;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-align:center;width:min(90vw,900px)}
+#info button{position:absolute;right:4px;top:4px;width:40px;height:40px;display:grid;place-items:center;background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:0}
+/* landscape phones: the card keeps to the side column, clear of Jobu */
+@media (orientation:landscape) and (max-height:500px){#info{max-width:300px;padding:12px 40px 12px 14px}#info p{font-size:13.5px;line-height:1.45}}
+#caption{position:fixed;left:calc(50% - var(--band-r,0px) / 2);top:38%;transform:translate(-50%,-50%) scale(.96);z-index:4;font-size:clamp(22px,4.4vw,42px);font-style:italic;color:#fff;
+  text-shadow:0 2px 24px #000;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-align:center;width:min(90vw - var(--band-r,0px),900px)}
 #caption.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #hud .rit{border-color:rgba(255,190,120,.3)}
-#hud .rit.on{background:#7a3b14;border-color:var(--ember)}
-#info .act{position:static;display:inline-block;margin-top:10px;font:500 14px/1 var(--display);letter-spacing:.04em;color:var(--ink);background:var(--accent);border:0;border-radius:999px;padding:8px 14px}
+#hud .views{display:flex;gap:8px}
+#hud #v-menu{display:none}
+@media (max-width:1300px){#hud .views{display:none}#hud #v-menu{display:inline-flex}}
+#hud .menu{display:inline-flex;align-items:center}
+#hud .menu::after{content:'';width:6px;height:6px;margin:0 2px 0 9px;border:solid currentColor;border-width:1.5px 0 0 1.5px;transform:translateY(2px) rotate(45deg);opacity:.65;transition:transform .2s}
+#hud .menu[aria-expanded="true"]::after{transform:translateY(-1px) rotate(225deg)}
+#hud .menu[aria-expanded="true"]{border-color:var(--candle)}
+@media (max-width:600px){#hud{gap:6px}#hud button{font-size:14px;padding:9px 11px}#hud .lg{display:none}}
+@media (min-width:601px){#hud .sm{display:none}}
+/* menus rise from the chip rail, styled like the note card */
+.pop{position:fixed;bottom:calc(var(--hud-h,62px) + 6px);left:16px;z-index:5;display:grid;gap:2px;min-width:200px;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;transform:translateY(6px);pointer-events:none;visibility:hidden;transition:opacity .2s,transform .2s,visibility 0s .2s;
+  max-height:calc(100vh - var(--hud-h,62px) - 16px);max-height:calc(100dvh - var(--hud-h,62px) - 16px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+@media (max-height:500px){#view-pop{grid-template-columns:1fr 1fr}}   /* landscape phones: two columns, so the whole menu fits */
+.pop.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity .2s,transform .2s}
+.pop button{all:unset;box-sizing:border-box;min-height:44px;display:flex;align-items:center;cursor:pointer;font:500 15px/1 var(--display);letter-spacing:.04em;color:var(--ink);padding:0 14px;border-radius:9px}
+.pop button:hover,.pop button:focus-visible{background:rgba(255,255,255,.07)}
+.pop button.on{color:var(--candle);background:rgba(255,217,168,.10)}
+#info .act{position:static;display:inline-block;width:auto;height:auto;min-height:40px;margin-top:10px;font:500 14px/1 var(--display);letter-spacing:.04em;color:var(--ink);background:var(--accent);border:0;border-radius:999px;padding:8px 14px}
 #info .act[hidden]{display:none}
-#jukebox{position:fixed;right:16px;top:calc(14px + env(safe-area-inset-top));z-index:4;width:224px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
-  padding:8px 12px 10px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:grid;gap:8px}
+/* now playing: YouTube's 200x200 player (its minimum while playing) with a slim rail of controls beside it */
+#jukebox{position:fixed;right:calc(16px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));z-index:6;display:grid;grid-template-columns:200px 44px;gap:6px;padding:6px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #jukebox[hidden]{display:none}
-.jb-head{display:flex;justify-content:space-between;align-items:center;font:500 12px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
-.jb-off{background:none;border:0;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;padding:2px 4px}
-.jb-player{width:200px;height:200px;border-radius:8px;overflow:hidden;background:#000}
-.jb-player[hidden]{display:none}
-.jb-note{margin:0;font-size:13px;line-height:1.45;color:var(--ink);opacity:.85}
+#jukebox.warm{visibility:hidden;pointer-events:none}
+.jb-player,.jb-note{grid-area:1/1}
+.jb-player{width:200px;height:200px;background:#000 center/cover no-repeat}
+.jb-player[hidden],.jb-note[hidden],.jb-cue[hidden]{display:none}
+.jb-note{width:200px;min-height:200px;margin:0;padding:14px;display:grid;align-content:center;font-size:13.5px;line-height:1.45;color:var(--ink);background:rgba(0,0,0,.35);border-radius:8px}
 .jb-note a{color:var(--candle)}
-.jb-title{font:500 14px/1.2 var(--display);color:var(--candle);letter-spacing:.02em}
-.jb-albums{display:flex;gap:6px}
-.jb-albums button{flex:1;display:flex;align-items:center;gap:6px;font:500 13px/1 var(--display);color:var(--ink);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:5px;cursor:pointer}
-.jb-albums button img{width:26px;height:26px;border-radius:3px;object-fit:cover}
-.jb-albums button.on{border-color:var(--candle);background:rgba(255,217,168,.12)}
+.jb-rail{display:flex;flex-direction:column;gap:8px}
+.jb-rail button{width:44px;height:44px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.04);color:var(--dim);font:400 24px/1 var(--body);cursor:pointer}
+.jb-rail button:hover{border-color:rgba(255,255,255,.35);color:var(--ink)}
+.jb-rail button:focus-visible,#jb-pill:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+.jb-rail img{width:100%;height:100%;object-fit:cover;border-radius:8px;opacity:.45}
+.jb-rail button.on{border-color:var(--candle)}
+.jb-rail button.on img{opacity:1}
+.jb-cue{grid-column:1/-1;margin:0 2px 2px;font-size:13px;font-style:italic;color:var(--candle)}
+/* folded away (paused): a small cover-art button in the same corner */
+#jb-pill{position:fixed;right:calc(16px + env(safe-area-inset-right));top:calc(14px + env(safe-area-inset-top));z-index:6;width:44px;height:44px;padding:0;border-radius:50%;overflow:hidden;
+  border:1px solid var(--line);background:var(--panel);cursor:pointer}
+#jb-pill[hidden]{display:none}
+#jb-pill img{width:100%;height:100%;object-fit:cover;opacity:.7}
+#jb-pill::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-35%,-50%);border-left:13px solid #fff;border-block:8px solid transparent;filter:drop-shadow(0 1px 3px #000)}
 #hud #music.on{background:#7a3b14;border-color:var(--ember)}
-body.music #hint{display:none}
+#hud #music.paused{border-color:var(--ember);border-style:dashed;color:var(--candle)}
 @media (max-width:600px){body.music #title span{display:none}}
-#hint{position:fixed;right:16px;top:calc(18px + env(safe-area-inset-top));z-index:3;color:var(--dim);font-size:12px;font-style:italic;opacity:0;transition:opacity 1s 1.2s;pointer-events:none}
-body.ready #hint{opacity:.8}
-@media (max-width:600px){#hint{display:none}}
+/* the one-time hint: a quiet line above the chips after the opening glide */
+#hint{position:fixed;left:50%;bottom:calc(var(--hud-h,62px) + 10px);transform:translate(-50%,6px);z-index:3;max-width:calc(100vw - 32px);padding:7px 14px;border-radius:999px;
+  background:rgba(14,12,14,.6);border:1px solid var(--line);color:var(--ink);font-size:13px;font-style:italic;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .6s,transform .6s}
+#hint.on{opacity:.9;transform:translate(-50%,0)}
+#info.on ~ #hint{opacity:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-#title{position:fixed;left:16px;top:calc(14px + env(safe-area-inset-top));z-index:3;pointer-events:none;opacity:0;transition:opacity 1s .4s}
+#title{position:fixed;left:max(16px,env(safe-area-inset-left));top:calc(14px + env(safe-area-inset-top));z-index:3;pointer-events:none;opacity:0;transition:opacity 1s .4s}
 body.ready #title{opacity:1}
 #title b{display:block;font:700 26px/1 var(--display);letter-spacing:.16em}
 #title span{color:var(--dim);font-size:12px;font-style:italic}
@@ -79,29 +115,50 @@ body.ready #title{opacity:1}
 <div id="load"><div style="text-align:center"><h1>JOBU</h1><p>Pedro Cerrano's locker &middot; Cleveland clubhouse &middot; 1989</p><div id="bar"><div id="prog"></div></div><div id="err"></div></div></div>
 <div id="title"><b>JOBU</b><span>Pedro Cerrano's locker &middot; Major League (1989)</span></div>
 <nav id="hud">
-  <button data-view="locker">The locker</button>
-  <button data-view="shrine" class="on">The shrine</button>
-  <button data-view="jobu">Jobu</button>
-  <button data-view="altar">Offerings</button>
-  <button data-view="shelf">Lower altar</button>
-  <button data-view="top">Top shelf</button>
-  <button data-view="table">Offering table</button>
-  <button data-view="film">Film frame</button>
+  <div class="views">
+    <button data-view="locker">The locker</button>
+    <button data-view="shrine" class="on">The shrine</button>
+    <button data-view="jobu">Jobu</button>
+    <button data-view="altar">Offerings</button>
+    <button data-view="shelf">Lower altar</button>
+    <button data-view="top">Top shelf</button>
+    <button data-view="table">Offering table</button>
+    <button data-view="film">Film frame</button>
+  </div>
+  <button id="v-menu" class="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="view-pop">Shrine</button>
   <span class="sep"></span>
-  <button class="rit" id="r-pour">Pour Jobu's rum</button>
-  <button class="rit" id="r-cigar">Light his cigar</button>
-  <button class="rit" id="r-candles">Snuff the candles</button>
-  <button class="rit" id="r-steal">Steal the rum</button>
+  <button id="rit-menu" class="menu rit" aria-haspopup="menu" aria-expanded="false" aria-controls="rit-pop">Rituals</button>
   <button id="music" aria-pressed="false">Music</button>
   <button id="lights">Clubhouse lights</button>
 </nav>
+<div id="view-pop" class="pop" role="menu" aria-label="Views">
+  <button role="menuitem" data-view="locker">The locker</button>
+  <button role="menuitem" data-view="shrine" class="on">The shrine</button>
+  <button role="menuitem" data-view="jobu">Jobu</button>
+  <button role="menuitem" data-view="altar">Offerings</button>
+  <button role="menuitem" data-view="shelf">Lower altar</button>
+  <button role="menuitem" data-view="top">Top shelf</button>
+  <button role="menuitem" data-view="table">Offering table</button>
+  <button role="menuitem" data-view="film">Film frame</button>
+</div>
+<div id="rit-pop" class="pop" role="menu" aria-label="Rituals">
+  <button role="menuitem" class="rit" id="r-pour">Pour Jobu's rum</button>
+  <button role="menuitem" class="rit" id="r-cigar">Light his cigar</button>
+  <button role="menuitem" class="rit" id="r-candles">Snuff the candles</button>
+  <button role="menuitem" class="rit" id="r-steal">Steal the rum</button>
+</div>
 <aside id="jukebox" hidden aria-label="Now playing">
-  <div class="jb-head"><span>Now playing</span><button class="jb-off" aria-label="Turn the music off">&times;</button></div>
   <div class="jb-player"><div id="yt"></div></div>
-  <p class="jb-note" hidden>The music plays on the public link: <a href="https://jfrascino.github.io/jobus-locker/" target="_blank" rel="noopener">jfrascino.github.io/jobus-locker</a></p>
-  <div class="jb-title"></div>
-  <div class="jb-albums"><button data-album="heart"><img src="assets/tex/cds/heart_front.jpg" alt="">Heart</button><button data-album="ratt"><img src="assets/tex/cds/ratt_front.jpg" alt="">RATT</button></div>
+  <p class="jb-note" hidden></p>
+  <div class="jb-rail">
+    <button class="jb-off" aria-label="Turn the music off" title="Music off">&times;</button>
+    <button class="jb-min" aria-label="Fold the player away (pauses the music)" title="Fold away (pauses)">&minus;</button>
+    <button data-album="heart" aria-label="Play Heart, Greatest Hits" title="Heart &middot; Greatest Hits"><img src="assets/tex/cds/heart_front.jpg" alt=""></button>
+    <button data-album="ratt" aria-label="Play RATT, Out of the Cellar" title="RATT &middot; Out of the Cellar"><img src="assets/tex/cds/ratt_front.jpg" alt=""></button>
+  </div>
+  <p class="jb-cue" hidden>Tap &#9654; on the player to start the music</p>
 </aside>
+<button id="jb-pill" hidden aria-label="Resume the music" title="Resume the music"><img alt=""></button>
 <div id="info"><button aria-label="Close">&times;</button><b></b><p></p><button id="info-act" class="act" hidden>Put it on</button></div>
 <div id="caption"></div>
 <div id="hint">Drag to look around &middot; tap anything on the shrine</div>

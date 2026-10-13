@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jobu's Locker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rokkitt:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap">
+<style>
+/* One dark candlelit look on purpose: a full-bleed WebGL stage, a slim chip rail along the bottom, note cards that rise from it. */
+:root{color-scheme:dark;
+  --bg:#08080a;--ink:#f2ebde;--dim:#a39b8c;--accent:#c8102e;--candle:#ffd9a8;--ember:#c26a2c;
+  --panel:rgba(14,12,14,.82);--line:rgba(255,255,255,.13);
+  --display:'Rokkitt','Rockwell','Clarendon',Georgia,serif;--body:'Source Serif 4',Georgia,'Times New Roman',serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.4 var(--body);overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#load{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);transition:opacity .8s;z-index:5}
+body.ready #load{opacity:0;pointer-events:none}
+#load h1{font:700 clamp(34px,7vw,64px)/1 var(--display);letter-spacing:.12em;margin:0 0 10px}
+#load p{color:var(--dim);margin:0 0 18px;font-style:italic}
+#bar{width:min(320px,70vw);height:2px;background:var(--line)}#prog{height:100%;width:3%;background:var(--accent);transition:width .4s}
+#err{color:#f88;margin-top:10px;font-family:monospace;font-size:12px}
+#hud{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:center;
+  background:linear-gradient(transparent,rgba(0,0,0,.72));z-index:3;overflow-x:auto;scrollbar-width:none;opacity:0;transition:opacity .8s .3s}
+body.ready #hud{opacity:1}
+#hud::-webkit-scrollbar{display:none}
+#hud button{flex:none;font:500 15px/1 var(--display);letter-spacing:.05em;color:var(--ink);background:rgba(20,18,20,.55);border:1px solid var(--line);
+  border-radius:999px;padding:9px 14px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#hud button:hover{border-color:rgba(255,255,255,.35)}
+#hud button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#hud .sep{flex:1 0 8px}
+#hud #lights{border-color:rgba(255,190,120,.45);color:var(--candle)}
+#hud button:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+#info{position:fixed;left:16px;bottom:calc(64px + env(safe-area-inset-bottom));max-width:min(380px,calc(100vw - 32px));z-index:4;
+  background:rgba(14,12,14,.82);border:1px solid var(--line);border-radius:14px;padding:14px 40px 14px 16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .25s,transform .25s}
+#info.on{opacity:1;transform:none;pointer-events:auto}
+#info b{display:block;font:700 19px/1.15 var(--display);letter-spacing:.03em;margin-bottom:6px;color:var(--candle)}
+#info p{margin:0;color:var(--ink);opacity:.86;font-size:14.5px;line-height:1.5}
+#info button{position:absolute;right:8px;top:8px;background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;padding:4px}
+#caption{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.96);z-index:4;font-size:clamp(22px,4.4vw,42px);font-style:italic;color:#fff;
+  text-shadow:0 2px 24px #000;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-align:center;width:min(90vw,900px)}
+#caption.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#hud .rit{border-color:rgba(255,190,120,.3)}
+#hud .rit.on{background:#7a3b14;border-color:var(--ember)}
+#hint{position:fixed;right:16px;top:calc(18px + env(safe-area-inset-top));z-index:3;color:var(--dim);font-size:12px;font-style:italic;opacity:0;transition:opacity 1s 1.2s;pointer-events:none}
+body.ready #hint{opacity:.8}
+@media (max-width:600px){#hint{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+#title{position:fixed;left:16px;top:calc(14px + env(safe-area-inset-top));z-index:3;pointer-events:none;opacity:0;transition:opacity 1s .4s}
+body.ready #title{opacity:1}
+#title b{display:block;font:700 26px/1 var(--display);letter-spacing:.16em}
+#title span{color:var(--dim);font-size:12px;font-style:italic}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="load"><div style="text-align:center"><h1>JOBU</h1><p>Pedro Cerrano's locker &middot; Cleveland clubhouse &middot; 1989</p><div id="bar"><div id="prog"></div></div><div id="err"></div></div></div>
+<div id="title"><b>JOBU</b><span>Pedro Cerrano's locker &middot; Major League (1989)</span></div>
+<nav id="hud">
+  <button data-view="locker">The locker</button>
+  <button data-view="shrine" class="on">The shrine</button>
+  <button data-view="jobu">Jobu</button>
+  <button data-view="altar">Offerings</button>
+  <button data-view="shelf">Lower altar</button>
+  <button data-view="top">Top shelf</button>
+  <button data-view="table">Offering table</button>
+  <button data-view="film">Film frame</button>
+  <span class="sep"></span>
+  <button class="rit" id="r-pour">Pour Jobu's rum</button>
+  <button class="rit" id="r-cigar">Light his cigar</button>
+  <button class="rit" id="r-candles">Snuff the candles</button>
+  <button class="rit" id="r-steal">Steal the rum</button>
+  <button id="lights">Clubhouse lights</button>
+</nav>
+<div id="info"><button aria-label="Close">&times;</button><b></b><p></p></div>
+<div id="caption"></div>
+<div id="hint">Drag to look around &middot; tap anything on the shrine</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
